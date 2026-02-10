@@ -1,0 +1,17 @@
+{
+  "name": "Policy Panic – FreeIPA Booth Game",
+  "short_name": "Policy Panic",
+  "description": "Fast identity-security quiz game by FreeIPA",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/shield.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
