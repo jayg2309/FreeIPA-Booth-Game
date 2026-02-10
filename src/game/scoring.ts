@@ -118,21 +118,24 @@ export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
   }
 }
 
-/** Submit a score to the shared leaderboard. */
+/** Submit a score to the shared leaderboard.
+ *  Returns { ok, duplicate } so the UI can show appropriate feedback.
+ */
 export async function submitScore(
   name: string,
   email: string,
   score: number
-): Promise<boolean> {
+): Promise<{ ok: boolean; duplicate: boolean }> {
   try {
     const res = await fetch("/api/submit-score", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, score }),
     });
-    return res.ok;
+    if (res.status === 409) return { ok: false, duplicate: true };
+    return { ok: res.ok, duplicate: false };
   } catch {
-    return false;
+    return { ok: false, duplicate: false };
   }
 }
 

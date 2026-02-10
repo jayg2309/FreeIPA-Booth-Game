@@ -14,16 +14,42 @@ export default function Landing() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [checking, setChecking] = useState(false);
+  const [emailError, setEmailError] = useState("");
 
   useEffect(() => {
     fetchLeaderboard().then(setLeaderboard);
   }, []);
 
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-  const canPlay = name.trim().length > 0 && validEmail;
+  const canPlay = name.trim().length > 0 && validEmail && !checking;
 
-  const handlePlay = () => {
+  const handlePlay = async () => {
     if (!canPlay) return;
+    setChecking(true);
+    setEmailError("");
+
+    try {
+      const res = await fetch("/api/check-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.alreadyPlayed) {
+          setEmailError("This email has already been used to play. One attempt per person!");
+          setChecking(false);
+          return;
+        }
+      }
+      // If API is unreachable (local dev / offline), allow play anyway
+    } catch {
+      // Network error — let them play, server will reject on submit if duplicate
+    }
+
+    setChecking(false);
     navigate("/play", {
       state: { playerName: name.trim(), playerEmail: email.trim() },
     });
@@ -68,11 +94,27 @@ export default function Landing() {
           type="email"
           placeholder="Your email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setEmailError("");
+          }}
           onKeyDown={handleKeyDown}
           maxLength={64}
           className="name-input"
+          style={emailError ? { borderColor: "var(--danger)" } : undefined}
         />
+        {emailError && (
+          <p
+            style={{
+              color: "var(--danger)",
+              fontSize: "0.8rem",
+              margin: 0,
+              textAlign: "left",
+            }}
+          >
+            {emailError}
+          </p>
+        )}
       </div>
 
       <button
@@ -81,7 +123,7 @@ export default function Landing() {
         disabled={!canPlay}
         style={{ marginTop: "0.25rem", opacity: canPlay ? 1 : 0.4 }}
       >
-        ▶&ensp;Play
+        {checking ? "Checking..." : "▶\u2002Play"}
       </button>
 
       {/* Shared Leaderboard — shows rank + name + score (no emails) */}

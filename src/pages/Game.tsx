@@ -5,7 +5,7 @@ import { generateAIQuestions } from "../game/aiQuestions";
 import type { RoundResult } from "../game/scoring";
 
 const QUESTION_COUNT = 10;
-const TIME_PER_QUESTION = 8; // seconds
+const TIME_PER_QUESTION = 15; // seconds
 
 type AnswerState = null | { chosenIdx: number; correct: boolean };
 

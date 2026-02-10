@@ -6,7 +6,7 @@ import {
   submitScore,
   type RoundResult,
 } from "../game/scoring";
-import { useMemo, useEffect, useRef } from "react";
+import { useMemo, useEffect, useRef, useState } from "react";
 
 export default function Results() {
   const navigate = useNavigate();
@@ -20,14 +20,24 @@ export default function Results() {
   const isNewBest = useMemo(() => recordGameLocal(score.total), [score.total]);
   const bestScore = getBestScore();
 
+  const [submitMsg, setSubmitMsg] = useState<string | null>(null);
+
   // Submit score to shared leaderboard (once)
   const submitted = useRef(false);
   useEffect(() => {
     if (submitted.current || roundResults.length === 0) return;
     submitted.current = true;
-    submitScore(playerName, playerEmail, score.total).catch(() => {
-      /* network error — score saved locally, user can try again */
-    });
+    submitScore(playerName, playerEmail, score.total)
+      .then(({ ok, duplicate }) => {
+        if (duplicate) {
+          setSubmitMsg("This email already has a score on the leaderboard.");
+        } else if (!ok) {
+          setSubmitMsg("Could not submit to leaderboard — score saved locally.");
+        }
+      })
+      .catch(() => {
+        setSubmitMsg("Could not submit to leaderboard — score saved locally.");
+      });
   }, [playerName, playerEmail, score.total, roundResults.length]);
 
   // If someone navigates here directly with no results, bounce to landing
@@ -71,6 +81,12 @@ export default function Results() {
         )}
       </h1>
 
+      {submitMsg && (
+        <p style={{ color: "var(--warning)", fontSize: "0.8rem", margin: 0 }}>
+          {submitMsg}
+        </p>
+      )}
+
       <div className="stats-grid">
         <div className="stat-box">
           <div className="value">
@@ -91,16 +107,6 @@ export default function Results() {
           <div className="label">Personal Best</div>
         </div>
       </div>
-
-      <button
-        className="btn btn--large"
-        onClick={() =>
-          navigate("/play", { state: { playerName, playerEmail } })
-        }
-        style={{ marginTop: "0.5rem" }}
-      >
-        ▶&ensp;Play Again
-      </button>
 
       <button className="btn btn--outline" onClick={() => navigate("/")}>
         Home

@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-const MAX_SCORE = 3575; // theoretical max for 10 questions, 8s each
+const MAX_SCORE = 4625; // theoretical max for 10 questions, 15s each
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
@@ -24,9 +24,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
+  // ── Check if this email has already played ──
+  const { data: existing } = await supabase
+    .from("scores")
+    .select("id")
+    .eq("email", email.trim().toLowerCase())
+    .limit(1);
+
+  if (existing && existing.length > 0) {
+    return res.status(409).json({ error: "This email has already been used to play." });
+  }
+
   const { error } = await supabase.from("scores").insert({
     name: name.trim().slice(0, 24),
-    email: email.trim().slice(0, 128),
+    email: email.trim().toLowerCase().slice(0, 128),
     score,
   });
 
