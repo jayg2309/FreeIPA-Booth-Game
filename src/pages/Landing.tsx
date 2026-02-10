@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getBestScore,
-  getGamesPlayed,
   fetchLeaderboard,
   type LeaderboardEntry,
 } from "../game/scoring";
@@ -10,7 +9,6 @@ import {
 export default function Landing() {
   const navigate = useNavigate();
   const best = getBestScore();
-  const played = getGamesPlayed();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -187,24 +185,40 @@ export default function Landing() {
         </div>
       )}
 
-      {played > 0 && (
+      {best > 0 && (
         <div
           style={{
-            display: "flex",
-            gap: "1rem",
-            fontSize: "0.85rem",
-            color: "var(--text-muted)",
+            textAlign: "center",
+            padding: "1rem 1.5rem",
+            background: "rgba(56, 189, 248, 0.08)",
+            border: "2px solid var(--accent)",
+            borderRadius: "1rem",
+            width: "100%",
+            maxWidth: 340,
           }}
         >
-          <span>
-            Your best:{" "}
-            <strong style={{ color: "var(--accent)" }}>
-              {best.toLocaleString()}
-            </strong>
-          </span>
-          <span>
-            Played: <strong>{played}</strong>
-          </span>
+          <div
+            style={{
+              fontSize: "0.85rem",
+              color: "var(--text-muted)",
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              marginBottom: "0.25rem",
+              fontWeight: 600,
+            }}
+          >
+            High Score
+          </div>
+          <div
+            style={{
+              fontSize: "2.5rem",
+              fontWeight: 800,
+              color: "var(--accent)",
+              lineHeight: 1.1,
+            }}
+          >
+            {best.toLocaleString()}
+          </div>
         </div>
       )}
 
