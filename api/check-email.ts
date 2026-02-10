@@ -6,8 +6,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { email } = req.body ?? {};
 
-  if (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-    return res.status(400).json({ error: "Invalid email" });
+  if (typeof email !== "string" || !/^[^\s@]+@gmail\.com$/i.test(email.trim())) {
+    return res.status(400).json({ error: "Only Gmail addresses are allowed" });
   }
 
   const supabase = createClient(
