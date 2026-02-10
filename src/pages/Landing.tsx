@@ -1,14 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  getBestScore,
   fetchLeaderboard,
   type LeaderboardEntry,
 } from "../game/scoring";
 
 export default function Landing() {
   const navigate = useNavigate();
-  const best = getBestScore();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -185,7 +183,7 @@ export default function Landing() {
         </div>
       )}
 
-      {best > 0 && (
+      {leaderboard.length > 0 && (
         <div
           style={{
             textAlign: "center",
@@ -217,7 +215,7 @@ export default function Landing() {
               lineHeight: 1.1,
             }}
           >
-            {best.toLocaleString()}
+            {leaderboard[0].score.toLocaleString()}
           </div>
         </div>
       )}
