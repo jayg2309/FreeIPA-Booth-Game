@@ -1,41 +1,49 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-const SYSTEM_PROMPT = `You are a quiz question generator for a FreeIPA booth game at a tech conference targeting college students.
+const SYSTEM_PROMPT = `Generate 10 tricky quiz questions about FreeIPA internals for college students at a tech booth.
 
-Your goal is to make students CURIOUS about FreeIPA and its ecosystem by asking genuinely challenging questions that require real knowledge — not guessing.
+HARD RULES — violating any of these makes the question REJECTED:
+1. The word "FreeIPA" must NEVER appear in ANY answer option. Every option is already about FreeIPA.
+2. No option may contain generic phrases like "centralized system", "identity platform", "security solution", "management tool", or "open-source solution". Be SPECIFIC.
+3. All 3 options MUST be real, named technologies, protocols, daemons, file paths, commands, or standards. No vague descriptions.
+4. A student who has never heard of FreeIPA should find all 3 options equally plausible. If one option "sounds more correct" than the others, the question is too easy.
+5. Questions must test SPECIFIC knowledge, not common sense.
 
-Reference documentation & components (use these as source material):
-- FreeIPA official docs: https://freeipa.readthedocs.io/
-- SSSD (System Security Services Daemon): https://sssd.io/ — caches credentials, enables offline login, connects Linux clients to FreeIPA
-- 389 Directory Server (LDAP backend): https://www.port389.org/ — stores all FreeIPA user/group/host data
-- MIT Kerberos: https://web.mit.edu/kerberos/ — provides ticket-based authentication in FreeIPA
-- Dogtag Certificate System: https://www.dogtagpki.org/ — manages X.509 certificates within FreeIPA
-- Certmonger: automatically tracks and renews certificates on enrolled hosts
-- DNS integration: FreeIPA includes a built-in DNS server for service discovery via SRV records
-- OTP / Two-Factor Auth: FreeIPA supports TOTP and HOTP tokens natively
-- Trust & Federation: FreeIPA can create cross-realm trusts with Active Directory
-- Sudo & HBAC rules: centrally managed access control — who can run what, where
+FreeIPA facts to draw from:
+- SSSD caches credentials locally, enabling offline login. Config: /etc/sssd/sssd.conf
+- 389 Directory Server is the LDAP backend (not OpenLDAP). Default port 389/636.
+- MIT Kerberos handles authentication. Issues TGT tickets. kinit/klist/kdestroy commands. Requires time sync (NTP). Default realm is uppercase domain.
+- Dogtag PKI manages certificates (not Let's Encrypt, not OpenSSL CA).
+- Certmonger auto-renews certs via getcert command (not crontab, not systemd timer).
+- DNS SRV records (_kerberos._tcp, _ldap._tcp) enable auto-discovery. BIND is the DNS backend.
+- ipa-client-install enrolls a host (not ipa-join, not realm join).
+- HBAC (Host-Based Access Control) restricts which users can log into which hosts.
+- Sudo rules in FreeIPA are stored centrally in LDAP (not /etc/sudoers).
+- OTP: supports TOTP and HOTP tokens natively (not FIDO2, not SMS).
+- Cross-realm trust with AD uses Samba components (not ADFS, not Azure AD Connect).
+- Replication: multi-master between replicas (not primary-secondary).
+- Web UI runs on Apache with mod_wsgi (not Nginx, not Tomcat).
+- ipa user-add / ipa group-add are CLI commands (not useradd, not ldapadd).
 
-CRITICAL — Question difficulty & answer design rules:
-- NEVER make "FreeIPA" or "Use FreeIPA" an answer option. The quiz is ABOUT FreeIPA — every answer relates to FreeIPA already. Putting "FreeIPA" as an option makes it a giveaway.
-- All 3 options must sound equally plausible to someone unfamiliar with the topic. Wrong options should be real technologies or real approaches — not obviously silly.
-- Ask about SPECIFIC technical details: which protocol, which component, which command, which port, which file, which mechanism. Don't ask generic "what should you use?" questions.
-- Good question types: "Which component does X?", "What protocol handles Y?", "What happens when Z?", "Which file/command configures X?", "What is the default behavior when Y?"
-- Examples of GOOD options: "Kerberos TGT ticket" vs "SAML assertion" vs "OAuth2 token" — all real, all plausible.
-- Examples of BAD options: "Use FreeIPA" vs "Use nothing" vs "Ask your professor" — one is obviously correct.
-- Mix up which option position (1st, 2nd, 3rd) is correct — don't always put the correct answer first.
+EXAMPLE GOOD QUESTIONS (generate new ones in this style, DO NOT copy these):
 
-Formatting rules:
-- Each question scenario: 1-2 sentences, maximum 25 words. Students have 25 seconds to read and answer.
-- Each answer option: maximum 10 words. Prefer 4-7 word options.
-- Exactly 3 answer options: 1 correct, 2 plausible-but-wrong.
-- Explanation (1-2 sentences, max 25 words): teach something specific. Mention the actual component (SSSD, Dogtag, 389 DS, Kerberos, Certmonger, etc.).
-- Concept category from: Single Sign-On, SSSD & Caching, Central Identity, Kerberos Tickets, Kerberos & Time Sync, Groups & RBAC, Least Privilege, Account Lifecycle, Password Policy, Certificates & Dogtag, Certmonger, Host Identity, Open Source, Sudo Rules, HBAC Rules, DNS & Discovery, Two-Factor Auth, Trust & AD, Audit & Logging, 389 Directory Server.
-- Vary categories — don't repeat the same one more than twice.
-- Frame as real problems: campus lab, student club server, hackathon, research cluster, dorm network.
+{"scenario":"Your lab's Linux machines need to log in even when the network is down. Which daemon caches credentials locally?","options":[{"text":"SSSD","isCorrect":true},{"text":"nscd","isCorrect":false},{"text":"nslcd","isCorrect":false}],"explanation":"SSSD caches Kerberos tickets and LDAP data so enrolled hosts work offline.","concept":"SSSD & Caching"}
 
-Return ONLY a valid JSON array (no markdown fences, no commentary) of 10 objects:
-[{"scenario":"...","options":[{"text":"...","isCorrect":true},{"text":"...","isCorrect":false},{"text":"...","isCorrect":false}],"explanation":"...","concept":"..."}]`;
+{"scenario":"You need to check your active Kerberos ticket. Which command shows current tickets?","options":[{"text":"klist","isCorrect":true},{"text":"ticketctl status","isCorrect":false},{"text":"krb5-list","isCorrect":false}],"explanation":"klist displays cached Kerberos tickets. Use kinit to get a new one.","concept":"Kerberos Tickets"}
+
+{"scenario":"The hackathon server needs its certificate renewed automatically. Which tool tracks cert expiry and renews it?","options":[{"text":"openssl cron job","isCorrect":false},{"text":"Certmonger","isCorrect":true},{"text":"Let's Encrypt certbot","isCorrect":false}],"explanation":"Certmonger monitors certs and auto-renews them via Dogtag CA.","concept":"Certmonger"}
+
+{"scenario":"You want to enroll a new Linux laptop into the identity domain. Which command do you run?","options":[{"text":"realm join","isCorrect":false},{"text":"ipa-client-install","isCorrect":true},{"text":"ldap-enroll --host","isCorrect":false}],"explanation":"ipa-client-install configures SSSD, Kerberos, and DNS on the client.","concept":"Host Identity"}
+
+{"scenario":"The club server stores user accounts in LDAP. Which directory server is the backend?","options":[{"text":"OpenLDAP","isCorrect":false},{"text":"Apache Directory","isCorrect":false},{"text":"389 Directory Server","isCorrect":true}],"explanation":"389 DS is the LDAP backend. It stores users, groups, hosts, and policies.","concept":"389 Directory Server"}
+
+Categories to spread across (use each at most twice):
+Single Sign-On, SSSD & Caching, Kerberos Tickets, Kerberos & Time Sync, Groups & RBAC, Least Privilege, Account Lifecycle, Password Policy, Certificates & Dogtag, Certmonger, Host Identity, Open Source, Sudo Rules, HBAC Rules, DNS & Discovery, Two-Factor Auth, Trust & AD, Audit & Logging, 389 Directory Server
+
+Format: scenarios max 25 words, options max 10 words, explanation max 25 words. Vary correct answer position.
+
+Return ONLY a JSON array of 10 objects (no markdown, no commentary):
+[{"scenario":"...","options":[{"text":"...","isCorrect":true/false},...],"explanation":"...","concept":"..."}]`;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
@@ -62,11 +70,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           {
             role: "user",
             content:
-              "Generate 10 challenging FreeIPA quiz questions. IMPORTANT: Do NOT use 'FreeIPA' as an answer option — it's too obvious. Instead ask about specific components, protocols, and mechanisms: e.g. 'Which daemon caches credentials for offline login?' (SSSD vs nscd vs autofs), 'What type of token does Kerberos issue?' (TGT vs JWT vs SAML), 'Which backend stores FreeIPA's LDAP data?' (389 DS vs OpenLDAP vs MariaDB). All 3 options must be real technologies that sound equally plausible. Use varied campus/lab/hackathon scenarios. Spread across different categories.",
+              "Generate 10 NEW tricky questions (different from the examples). Every option must be a specific named tool, command, protocol, daemon, or standard — never 'FreeIPA' itself, never vague descriptions. All 3 options must be real and equally plausible. Use campus/lab/hackathon scenarios. Vary categories.",
           },
         ],
-        temperature: 0.95,
-        max_tokens: 3000,
+        temperature: 0.9,
+        max_tokens: 3500,
       }),
       signal: controller.signal,
     });
