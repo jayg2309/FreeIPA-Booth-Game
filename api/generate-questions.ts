@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 const SYSTEM_PROMPT = `You are a quiz question generator for a FreeIPA booth game at a tech conference targeting college students.
 
-Your goal is to make students CURIOUS about FreeIPA and its ecosystem. Questions should teach real concepts so students walk away wanting to learn more.
+Your goal is to make students CURIOUS about FreeIPA and its ecosystem by asking genuinely challenging questions that require real knowledge — not guessing.
 
 Reference documentation & components (use these as source material):
 - FreeIPA official docs: https://freeipa.readthedocs.io/
@@ -16,15 +16,23 @@ Reference documentation & components (use these as source material):
 - Trust & Federation: FreeIPA can create cross-realm trusts with Active Directory
 - Sudo & HBAC rules: centrally managed access control — who can run what, where
 
-Rules:
-- Each question scenario MUST be short: 1-2 sentences, maximum 25 words. Students have 25 seconds to read and answer.
-- Each answer option MUST be concise: maximum 10 words per option. Prefer 4-7 word options.
+CRITICAL — Question difficulty & answer design rules:
+- NEVER make "FreeIPA" or "Use FreeIPA" an answer option. The quiz is ABOUT FreeIPA — every answer relates to FreeIPA already. Putting "FreeIPA" as an option makes it a giveaway.
+- All 3 options must sound equally plausible to someone unfamiliar with the topic. Wrong options should be real technologies or real approaches — not obviously silly.
+- Ask about SPECIFIC technical details: which protocol, which component, which command, which port, which file, which mechanism. Don't ask generic "what should you use?" questions.
+- Good question types: "Which component does X?", "What protocol handles Y?", "What happens when Z?", "Which file/command configures X?", "What is the default behavior when Y?"
+- Examples of GOOD options: "Kerberos TGT ticket" vs "SAML assertion" vs "OAuth2 token" — all real, all plausible.
+- Examples of BAD options: "Use FreeIPA" vs "Use nothing" vs "Ask your professor" — one is obviously correct.
+- Mix up which option position (1st, 2nd, 3rd) is correct — don't always put the correct answer first.
+
+Formatting rules:
+- Each question scenario: 1-2 sentences, maximum 25 words. Students have 25 seconds to read and answer.
+- Each answer option: maximum 10 words. Prefer 4-7 word options.
 - Exactly 3 answer options: 1 correct, 2 plausible-but-wrong.
-- The explanation (1-2 sentences, max 25 words) should teach something interesting that makes students want to explore the docs. Mention a specific component (SSSD, Dogtag, 389 DS, Kerberos, Certmonger, etc.) when relevant.
-- A concept category from this list: Single Sign-On, SSSD & Caching, Central Identity, Kerberos Tickets, Kerberos & Time Sync, Groups & RBAC, Least Privilege, Account Lifecycle, Password Policy, Certificates & Dogtag, Certmonger, Host Identity, Open Source, Sudo Rules, HBAC Rules, DNS & Discovery, Two-Factor Auth, Trust & AD, Audit & Logging, 389 Directory Server.
-- Vary the categories — don't repeat the same category more than twice.
-- Frame questions as real problems students might face (campus lab, student club server, hackathon, research cluster, dorm network) so they see WHY identity management matters.
-- Keep language accessible for students new to sysadmin topics but teach real concepts — don't dumb it down, make it intriguing.
+- Explanation (1-2 sentences, max 25 words): teach something specific. Mention the actual component (SSSD, Dogtag, 389 DS, Kerberos, Certmonger, etc.).
+- Concept category from: Single Sign-On, SSSD & Caching, Central Identity, Kerberos Tickets, Kerberos & Time Sync, Groups & RBAC, Least Privilege, Account Lifecycle, Password Policy, Certificates & Dogtag, Certmonger, Host Identity, Open Source, Sudo Rules, HBAC Rules, DNS & Discovery, Two-Factor Auth, Trust & AD, Audit & Logging, 389 Directory Server.
+- Vary categories — don't repeat the same one more than twice.
+- Frame as real problems: campus lab, student club server, hackathon, research cluster, dorm network.
 
 Return ONLY a valid JSON array (no markdown fences, no commentary) of 10 objects:
 [{"scenario":"...","options":[{"text":"...","isCorrect":true},{"text":"...","isCorrect":false},{"text":"...","isCorrect":false}],"explanation":"...","concept":"..."}]`;
@@ -54,7 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           {
             role: "user",
             content:
-              "Generate 10 unique, curiosity-sparking FreeIPA quiz questions that teach real concepts about FreeIPA and its components (SSSD, Kerberos, Dogtag, 389 DS, Certmonger, DNS, HBAC, Sudo rules, OTP). Use varied realistic scenarios (college campus lab, student club server, hackathon infra, research cluster, dorm network). Spread across different concept categories. Make students think 'wow, I want to learn more about this.'",
+              "Generate 10 challenging FreeIPA quiz questions. IMPORTANT: Do NOT use 'FreeIPA' as an answer option — it's too obvious. Instead ask about specific components, protocols, and mechanisms: e.g. 'Which daemon caches credentials for offline login?' (SSSD vs nscd vs autofs), 'What type of token does Kerberos issue?' (TGT vs JWT vs SAML), 'Which backend stores FreeIPA's LDAP data?' (389 DS vs OpenLDAP vs MariaDB). All 3 options must be real technologies that sound equally plausible. Use varied campus/lab/hackathon scenarios. Spread across different categories.",
           },
         ],
         temperature: 0.95,
