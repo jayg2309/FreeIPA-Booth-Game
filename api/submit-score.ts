@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-const MAX_SCORE = 4625; // theoretical max for 10 questions, 15s each
+const MAX_SCORE = 6125; // theoretical max for 10 questions, 25s each
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
