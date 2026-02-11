@@ -9,21 +9,114 @@ HARD RULES — violating any of these makes the question REJECTED:
 4. A student who has never heard of FreeIPA should find all 3 options equally plausible. If one option "sounds more correct" than the others, the question is too easy.
 5. Questions must test SPECIFIC knowledge, not common sense.
 
-FreeIPA facts to draw from:
-- SSSD caches credentials locally, enabling offline login. Config: /etc/sssd/sssd.conf
-- 389 Directory Server is the LDAP backend (not OpenLDAP). Default port 389/636.
-- MIT Kerberos handles authentication. Issues TGT tickets. kinit/klist/kdestroy commands. Requires time sync (NTP). Default realm is uppercase domain.
-- Dogtag PKI manages certificates (not Let's Encrypt, not OpenSSL CA).
-- Certmonger auto-renews certs via getcert command (not crontab, not systemd timer).
-- DNS SRV records (_kerberos._tcp, _ldap._tcp) enable auto-discovery. BIND is the DNS backend.
-- ipa-client-install enrolls a host (not ipa-join, not realm join).
-- HBAC (Host-Based Access Control) restricts which users can log into which hosts.
-- Sudo rules in FreeIPA are stored centrally in LDAP (not /etc/sudoers).
-- OTP: supports TOTP and HOTP tokens natively (not FIDO2, not SMS).
-- Cross-realm trust with AD uses Samba components (not ADFS, not Azure AD Connect).
-- Replication: multi-master between replicas (not primary-secondary).
-- Web UI runs on Apache with mod_wsgi (not Nginx, not Tomcat).
-- ipa user-add / ipa group-add are CLI commands (not useradd, not ldapadd).
+REFERENCE DOCUMENTATION — use these projects and facts as source material for questions:
+
+FreeIPA (https://freeipa.readthedocs.io/, https://www.freeipa.org):
+- Integrated identity & policy management for Linux/UNIX networks
+- Combines LDAP, Kerberos, DNS, NTP, and Certificate Authority into one solution
+- CLI commands: ipa user-add, ipa group-add, ipa host-add, ipa sudorule-add, ipa hbacrule-add (NOT useradd, NOT ldapadd)
+- Web UI runs on Apache HTTP Server with mod_wsgi (not Nginx, not Tomcat)
+- ipa-server-install sets up the server; ipa-replica-install creates replicas
+- Multi-master replication between replicas (not primary-secondary)
+- Manages host keytabs, service principals, and automount maps
+- Password policy: configurable min length, complexity, history, max failures, lockout duration
+- Account lifecycle: stage → active → preserved users
+
+SSSD — System Security Services Daemon (https://sssd.io/):
+- Connects Linux clients to FreeIPA (or AD, LDAP)
+- Caches credentials locally enabling offline login
+- Config file: /etc/sssd/sssd.conf
+- Provides NSS and PAM integration
+- id_provider, auth_provider, access_provider configured per domain
+- Replaces older nscd / nslcd daemons
+
+389 Directory Server (https://www.port389.org/, https://directory.fedoraproject.org/):
+- The LDAP backend for all FreeIPA data (users, groups, hosts, sudo rules, HBAC, DNS)
+- NOT OpenLDAP, NOT Apache Directory Studio
+- Default ports: 389 (LDAP), 636 (LDAPS)
+- Uses cn=Directory Manager as the root admin DN
+- Supports multi-supplier replication (changelog-based)
+- Plugin architecture: memberOf, referential integrity, DNA (distributed numeric assignment)
+- Schema: inetOrgPerson, posixAccount, krbPrincipalAux
+
+MIT Kerberos (https://web.mit.edu/kerberos/):
+- Provides ticket-based authentication (SSO)
+- Key concepts: TGT (Ticket Granting Ticket), KDC (Key Distribution Center), realm, principal
+- Commands: kinit (get ticket), klist (show tickets), kdestroy (remove tickets), kpasswd (change password)
+- Realm name = UPPERCASE domain (e.g., EXAMPLE.COM)
+- Requires time synchronization — max clock skew default is 5 minutes
+- Service principal format: HTTP/host.example.com@EXAMPLE.COM
+- Keytab file: /etc/krb5.keytab stores host/service keys
+- Config: /etc/krb5.conf
+
+Dogtag Certificate System (https://www.dogtagpki.org/):
+- The CA (Certificate Authority) inside FreeIPA
+- Issues and manages X.509 certificates
+- NOT Let's Encrypt, NOT OpenSSL CA, NOT EJBCA
+- Sub-systems: CA, KRA (Key Recovery Authority), OCSP, TKS, TPS
+- Stores certs and keys in 389 DS
+- Supports certificate profiles and automatic renewal
+
+Certmonger (https://pagure.io/certmonger):
+- Daemon that tracks certificate expiration and auto-renews
+- Command: getcert list, getcert request, getcert start-tracking
+- NOT crontab, NOT systemd timers, NOT certbot
+- Works with Dogtag CA, self-signed, or external CAs
+- Auto-enrolled during ipa-client-install
+
+DNS / BIND (https://bind9.readthedocs.io/):
+- FreeIPA includes integrated BIND DNS server
+- SRV records for service discovery: _kerberos._tcp, _ldap._tcp, _kpasswd._tcp
+- Clients use DNS to find KDC and LDAP servers automatically
+- DNSSEC signing supported
+- ipa dnsrecord-add / ipa dnszone-add commands
+- Zone transfers between replicas
+
+Samba / Trust with Active Directory (https://www.samba.org/):
+- Cross-realm trust between FreeIPA and Microsoft Active Directory
+- Uses Samba libraries (smbd, winbindd components)
+- NOT ADFS, NOT Azure AD Connect, NOT Okta federation
+- ipa trust-add command establishes trust
+- Allows AD users to access Linux resources and vice versa
+- ID range management for UID/GID mapping
+
+NTP / Chrony (https://chrony-project.org/):
+- Time sync is critical for Kerberos (max skew = 5 minutes)
+- FreeIPA uses chronyd (replaced ntpd)
+- If clocks are out of sync, Kerberos authentication fails silently
+
+Automount (https://freeipa.readthedocs.io/en/latest/designs/automount.html):
+- Centrally managed NFS mount maps stored in LDAP
+- ipa automountmap-add, ipa automountkey-add
+- Replaces local /etc/auto.master files
+
+HBAC — Host-Based Access Control:
+- Controls which users/groups can access which hosts/services
+- ipa hbacrule-add, ipa hbacrule-add-user, ipa hbacrule-add-host
+- Default rule: allow_all (often disabled in production)
+- NOT TCP Wrappers, NOT firewall rules, NOT SELinux booleans
+
+Sudo Rules:
+- Centrally stored in LDAP (NOT /etc/sudoers, NOT sudoers.d files)
+- ipa sudorule-add, ipa sudorule-add-allow-command
+- Distributed via SSSD to enrolled clients
+- Can scope by user, group, host, host group, and command
+
+OTP / Two-Factor Auth:
+- FreeIPA supports TOTP (time-based) and HOTP (counter-based) natively
+- NOT FIDO2/WebAuthn, NOT SMS codes, NOT push notifications
+- Configured per-user; token enrolled via Web UI or CLI
+- ipa otptoken-add command
+
+SELinux User Mapping:
+- FreeIPA can map IPA users to SELinux contexts on enrolled hosts
+- ipa selinuxusermap-add
+- Ensures users get correct SELinux context at login
+
+Vault / Secret Storage (KRA):
+- FreeIPA's Key Recovery Authority stores secrets (passwords, keys)
+- ipa vault-add, ipa vault-archive, ipa vault-retrieve
+- Symmetric, asymmetric, or standard vault types
 
 EXAMPLE GOOD QUESTIONS (generate new ones in this style, DO NOT copy these):
 
@@ -55,7 +148,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25_000);
+    const timeout = setTimeout(() => controller.abort(), 30_000);
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
