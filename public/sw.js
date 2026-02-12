@@ -10,7 +10,7 @@ self.addEventListener("install", (event) => {
         "/",
         "/index.html",
         "/manifest.webmanifest",
-        "/shield.svg",
+        "/freeipa-logo.png",
       ])
     )
   );

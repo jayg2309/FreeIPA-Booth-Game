@@ -1,16 +1,29 @@
 /**
  * Certificate generator — draws a professional certificate using Canvas API.
- * No external dependencies; logos are drawn inline.
+ * Logos: FreeIPA (drawn inline) + DevConf (loaded from /devconf-logo.png).
  */
 
 const W = 1400;
 const H = 900;
 
 const FREEIPA_BLUE = "#0066cc";
-const REDHAT_RED = "#cc0000";
+const DEVCONF_PURPLE = "#7c5cbf";
 const GOLD = "#b8860b";
 const GOLD_LIGHT = "#daa520";
 const DARK = "#1a1a2e";
+
+/* ────────────────────────────────────────────── */
+/*  Helper: load an image from a URL              */
+/* ────────────────────────────────────────────── */
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
 
 /* ────────────────────────────────────────────── */
 /*  Main: generate certificate as PNG Blob        */
@@ -27,6 +40,18 @@ export async function generateCertificate(
   canvas.height = H;
   const ctx = canvas.getContext("2d")!;
 
+  // Try loading logos (graceful fallback to drawn/text versions if they fail)
+  let freeipaImg: HTMLImageElement | null = null;
+  let devconfImg: HTMLImageElement | null = null;
+  try {
+    [freeipaImg, devconfImg] = await Promise.all([
+      loadImage("/freeipa-logo.png").catch(() => null),
+      loadImage("/devconf-logo.png").catch(() => null),
+    ]);
+  } catch {
+    // Logos not available — will use fallbacks
+  }
+
   /* ── White background ── */
   ctx.fillStyle = "#fffef8";
   ctx.fillRect(0, 0, W, H);
@@ -37,15 +62,15 @@ export async function generateCertificate(
   /* ── Top accent stripe ── */
   const grad = ctx.createLinearGradient(0, 0, W, 0);
   grad.addColorStop(0, FREEIPA_BLUE);
-  grad.addColorStop(1, REDHAT_RED);
+  grad.addColorStop(1, DEVCONF_PURPLE);
   ctx.fillStyle = grad;
   ctx.fillRect(50, 50, W - 100, 6);
 
   /* ── FreeIPA logo (top-left) ── */
-  drawFreeIPALogo(ctx, 80, 80);
+  drawFreeIPALogo(ctx, 80, 75, freeipaImg);
 
-  /* ── Red Hat logo (top-right) ── */
-  drawRedHatLogo(ctx, W - 310, 80);
+  /* ── DevConf logo (top-right) ── */
+  drawDevConfLogo(ctx, W - 310, 75, devconfImg);
 
   /* ── "Certificate of Achievement" ── */
   ctx.fillStyle = GOLD;
@@ -81,11 +106,10 @@ export async function generateCertificate(
   drawDivider(ctx, W / 2 - nameWidth / 2 - 20, 435, nameWidth + 40);
 
   /* ── Score details ── */
-  const accuracy = Math.round((correct / total) * 100);
   ctx.fillStyle = DARK;
   ctx.font = "22px Georgia, 'Times New Roman', serif";
   ctx.fillText(
-    `scored ${score.toLocaleString()} points with ${accuracy}% accuracy`,
+    `scored ${score.toLocaleString()} points`,
     W / 2,
     485
   );
@@ -134,13 +158,13 @@ export async function generateCertificate(
   ctx.font = "bold 14px Arial, Helvetica, sans-serif";
   ctx.fillText("FreeIPA — Identity, Policy, Audit", W / 2, 760);
 
-  ctx.fillStyle = REDHAT_RED;
+  ctx.fillStyle = DEVCONF_PURPLE;
   ctx.font = "bold 13px Arial, Helvetica, sans-serif";
-  ctx.fillText("Sponsored by Red Hat", W / 2, 785);
+  ctx.fillText("Presented at DevConf", W / 2, 785);
 
   /* ── Bottom accent stripe ── */
   const grad2 = ctx.createLinearGradient(0, 0, W, 0);
-  grad2.addColorStop(0, REDHAT_RED);
+  grad2.addColorStop(0, DEVCONF_PURPLE);
   grad2.addColorStop(1, FREEIPA_BLUE);
   ctx.fillStyle = grad2;
   ctx.fillRect(50, H - 56, W - 100, 6);
@@ -246,94 +270,64 @@ function drawDivider(
   ctx.fill();
 }
 
-function drawFreeIPALogo(ctx: CanvasRenderingContext2D, x: number, y: number) {
-  ctx.save();
-  // Shield outer
-  ctx.beginPath();
-  ctx.moveTo(x + 28, y);
-  ctx.lineTo(x + 56, y);
-  ctx.lineTo(x + 60, y + 10);
-  ctx.lineTo(x + 60, y + 42);
-  ctx.quadraticCurveTo(x + 60, y + 68, x + 28, y + 80);
-  ctx.quadraticCurveTo(x - 4, y + 68, x - 4, y + 42);
-  ctx.lineTo(x - 4, y + 10);
-  ctx.closePath();
-  ctx.fillStyle = FREEIPA_BLUE;
-  ctx.fill();
-
-  // Shield inner white
-  ctx.beginPath();
-  ctx.moveTo(x + 28, y + 5);
-  ctx.lineTo(x + 51, y + 5);
-  ctx.lineTo(x + 54, y + 14);
-  ctx.lineTo(x + 54, y + 42);
-  ctx.quadraticCurveTo(x + 54, y + 62, x + 28, y + 73);
-  ctx.quadraticCurveTo(x + 2, y + 62, x + 2, y + 42);
-  ctx.lineTo(x + 2, y + 14);
-  ctx.closePath();
-  ctx.fillStyle = "#ffffff";
-  ctx.fill();
-
-  // Key icon — circle head
-  ctx.fillStyle = FREEIPA_BLUE;
-  ctx.beginPath();
-  ctx.arc(x + 28, y + 28, 9, 0, Math.PI * 2);
-  ctx.fill();
-  // Key icon — inner circle (hole)
-  ctx.fillStyle = "#ffffff";
-  ctx.beginPath();
-  ctx.arc(x + 28, y + 27, 4, 0, Math.PI * 2);
-  ctx.fill();
-  // Key shaft
-  ctx.fillStyle = FREEIPA_BLUE;
-  ctx.fillRect(x + 26, y + 37, 4, 22);
-  // Key teeth
-  ctx.fillRect(x + 30, y + 44, 6, 3);
-  ctx.fillRect(x + 30, y + 50, 5, 3);
-  ctx.restore();
-
-  // "FreeIPA" text
-  ctx.fillStyle = FREEIPA_BLUE;
-  ctx.font = "bold 30px Arial, Helvetica, sans-serif";
-  ctx.textAlign = "left";
-  ctx.fillText("FreeIPA", x + 72, y + 48);
-  ctx.font = "12px Arial, Helvetica, sans-serif";
-  ctx.fillStyle = "#888";
-  ctx.fillText("Identity · Policy · Audit", x + 72, y + 66);
-  ctx.textAlign = "center";
+function drawFreeIPALogo(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  img: HTMLImageElement | null
+) {
+  if (img) {
+    // Draw the actual FreeIPA logo image, scaled to fit ~85px tall
+    const targetH = 85;
+    const scale = targetH / img.naturalHeight;
+    const targetW = img.naturalWidth * scale;
+    ctx.drawImage(img, x, y, targetW, targetH);
+  } else {
+    // Fallback: text-only if image failed to load
+    ctx.fillStyle = FREEIPA_BLUE;
+    ctx.font = "bold 30px Arial, Helvetica, sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText("FreeIPA", x + 10, y + 48);
+    ctx.font = "12px Arial, Helvetica, sans-serif";
+    ctx.fillStyle = "#888";
+    ctx.fillText("Identity · Policy · Audit", x + 10, y + 66);
+    ctx.textAlign = "center";
+  }
 }
 
-function drawRedHatLogo(ctx: CanvasRenderingContext2D, x: number, y: number) {
-  ctx.save();
+function drawDevConfLogo(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  img: HTMLImageElement | null
+) {
+  if (img) {
+    // Draw the actual DevConf logo image, scaled to fit ~80px tall
+    const targetH = 80;
+    const scale = targetH / img.naturalHeight;
+    const targetW = img.naturalWidth * scale;
+    ctx.drawImage(img, x, y, targetW, targetH);
 
-  // Fedora hat
-  ctx.fillStyle = REDHAT_RED;
-  // Hat brim
-  ctx.beginPath();
-  ctx.ellipse(x + 35, y + 55, 38, 9, 0, 0, Math.PI * 2);
-  ctx.fill();
-  // Hat top (dome)
-  ctx.beginPath();
-  ctx.moveTo(x + 5, y + 55);
-  ctx.quadraticCurveTo(x - 2, y + 18, x + 35, y + 10);
-  ctx.quadraticCurveTo(x + 72, y + 18, x + 65, y + 55);
-  ctx.closePath();
-  ctx.fill();
-  // Hat band
-  ctx.fillStyle = "#aa0000";
-  ctx.fillRect(x + 8, y + 43, 54, 5);
-
-  ctx.restore();
-
-  // "Red Hat" text
-  ctx.fillStyle = REDHAT_RED;
-  ctx.font = "bold 30px Arial, Helvetica, sans-serif";
-  ctx.textAlign = "left";
-  ctx.fillText("Red Hat", x + 82, y + 48);
-  ctx.font = "12px Arial, Helvetica, sans-serif";
-  ctx.fillStyle = "#888";
-  ctx.fillText("Sponsored by Red Hat", x + 82, y + 66);
-  ctx.textAlign = "center";
+    // "DevConf" text beside the logo
+    ctx.fillStyle = DEVCONF_PURPLE;
+    ctx.font = "bold 28px Arial, Helvetica, sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText("DevConf", x + targetW + 12, y + 48);
+    ctx.font = "12px Arial, Helvetica, sans-serif";
+    ctx.fillStyle = "#888";
+    ctx.fillText("devconf.info", x + targetW + 12, y + 66);
+    ctx.textAlign = "center";
+  } else {
+    // Fallback: text-only if image failed to load
+    ctx.fillStyle = DEVCONF_PURPLE;
+    ctx.font = "bold 30px Arial, Helvetica, sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText("DevConf", x + 10, y + 48);
+    ctx.font = "12px Arial, Helvetica, sans-serif";
+    ctx.fillStyle = "#888";
+    ctx.fillText("devconf.info", x + 10, y + 66);
+    ctx.textAlign = "center";
+  }
 }
 
 /* ────────────────────────────────────────────── */
@@ -369,7 +363,7 @@ export async function shareOnLinkedIn(
     );
     const shareData = {
       title: "FreeIPA Policy Panic Certificate",
-      text: `I scored ${score.toLocaleString()} points on the FreeIPA Policy Panic quiz! 🛡️ #FreeIPA #OpenSource #Linux #RedHat`,
+      text: `I scored ${score.toLocaleString()} points on the FreeIPA Policy Panic quiz at DevConf! 🛡️ #FreeIPA #OpenSource #Linux #DevConf`,
       files: [file],
     };
     if (navigator.canShare(shareData)) {
