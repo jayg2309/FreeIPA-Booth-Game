@@ -1,0 +1,392 @@
+/**
+ * Certificate generator — draws a professional certificate using Canvas API.
+ * No external dependencies; logos are drawn inline.
+ */
+
+const W = 1400;
+const H = 900;
+
+const FREEIPA_BLUE = "#0066cc";
+const REDHAT_RED = "#cc0000";
+const GOLD = "#b8860b";
+const GOLD_LIGHT = "#daa520";
+const DARK = "#1a1a2e";
+
+/* ────────────────────────────────────────────── */
+/*  Main: generate certificate as PNG Blob        */
+/* ────────────────────────────────────────────── */
+
+export async function generateCertificate(
+  playerName: string,
+  score: number,
+  correct: number,
+  total: number
+): Promise<Blob> {
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d")!;
+
+  /* ── White background ── */
+  ctx.fillStyle = "#fffef8";
+  ctx.fillRect(0, 0, W, H);
+
+  /* ── Decorative borders ── */
+  drawBorders(ctx);
+
+  /* ── Top accent stripe ── */
+  const grad = ctx.createLinearGradient(0, 0, W, 0);
+  grad.addColorStop(0, FREEIPA_BLUE);
+  grad.addColorStop(1, REDHAT_RED);
+  ctx.fillStyle = grad;
+  ctx.fillRect(50, 50, W - 100, 6);
+
+  /* ── FreeIPA logo (top-left) ── */
+  drawFreeIPALogo(ctx, 80, 80);
+
+  /* ── Red Hat logo (top-right) ── */
+  drawRedHatLogo(ctx, W - 310, 80);
+
+  /* ── "Certificate of Achievement" ── */
+  ctx.fillStyle = GOLD;
+  ctx.font = "small-caps 18px Georgia, 'Times New Roman', serif";
+  ctx.textAlign = "center";
+  ctx.letterSpacing = "6px";
+  ctx.fillText("CERTIFICATE OF ACHIEVEMENT", W / 2, 190);
+  ctx.letterSpacing = "0px";
+
+  /* ── Gold divider ── */
+  drawDivider(ctx, W / 2 - 200, 205, 400);
+
+  /* ── Title ── */
+  ctx.fillStyle = DARK;
+  ctx.font = "bold 36px Georgia, 'Times New Roman', serif";
+  ctx.fillText("Policy Panic", W / 2, 260);
+  ctx.font = "italic 20px Georgia, 'Times New Roman', serif";
+  ctx.fillStyle = "#555";
+  ctx.fillText("FreeIPA Identity Management Challenge", W / 2, 295);
+
+  /* ── "This certifies that" ── */
+  ctx.fillStyle = "#666";
+  ctx.font = "17px Georgia, 'Times New Roman', serif";
+  ctx.fillText("This is to certify that", W / 2, 355);
+
+  /* ── Player name ── */
+  ctx.fillStyle = FREEIPA_BLUE;
+  ctx.font = "bold 52px Georgia, 'Times New Roman', serif";
+  ctx.fillText(playerName, W / 2, 420);
+
+  /* ── Underline beneath name ── */
+  const nameWidth = ctx.measureText(playerName).width;
+  drawDivider(ctx, W / 2 - nameWidth / 2 - 20, 435, nameWidth + 40);
+
+  /* ── Score details ── */
+  const accuracy = Math.round((correct / total) * 100);
+  ctx.fillStyle = DARK;
+  ctx.font = "22px Georgia, 'Times New Roman', serif";
+  ctx.fillText(
+    `scored ${score.toLocaleString()} points with ${accuracy}% accuracy`,
+    W / 2,
+    485
+  );
+  ctx.fillStyle = "#666";
+  ctx.font = "18px Georgia, 'Times New Roman', serif";
+  ctx.fillText(`(${correct} out of ${total} questions correct)`, W / 2, 520);
+
+  /* ── Description ── */
+  ctx.fillStyle = "#555";
+  ctx.font = "italic 17px Georgia, 'Times New Roman', serif";
+  ctx.fillText(
+    "and has demonstrated curiosity and knowledge in the field of",
+    W / 2,
+    575
+  );
+  ctx.fillText(
+    "open-source identity management using FreeIPA",
+    W / 2,
+    600
+  );
+
+  /* ── Date ── */
+  const date = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  ctx.fillStyle = "#888";
+  ctx.font = "15px Georgia, 'Times New Roman', serif";
+  ctx.fillText(date, W / 2, 660);
+
+  /* ── Bottom divider ── */
+  drawDivider(ctx, W / 2 - 250, 685, 500);
+
+  /* ── Links footer ── */
+  ctx.fillStyle = "#888";
+  ctx.font = "13px Arial, Helvetica, sans-serif";
+  ctx.fillText(
+    "freeipa.org   |   github.com/freeipa/freeipa   |   pagure.io/freeipa",
+    W / 2,
+    725
+  );
+
+  /* ── Taglines ── */
+  ctx.fillStyle = FREEIPA_BLUE;
+  ctx.font = "bold 14px Arial, Helvetica, sans-serif";
+  ctx.fillText("FreeIPA — Identity, Policy, Audit", W / 2, 760);
+
+  ctx.fillStyle = REDHAT_RED;
+  ctx.font = "bold 13px Arial, Helvetica, sans-serif";
+  ctx.fillText("Sponsored by Red Hat", W / 2, 785);
+
+  /* ── Bottom accent stripe ── */
+  const grad2 = ctx.createLinearGradient(0, 0, W, 0);
+  grad2.addColorStop(0, REDHAT_RED);
+  grad2.addColorStop(1, FREEIPA_BLUE);
+  ctx.fillStyle = grad2;
+  ctx.fillRect(50, H - 56, W - 100, 6);
+
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob!), "image/png");
+  });
+}
+
+/* ────────────────────────────────────────────── */
+/*  Drawing helpers                               */
+/* ────────────────────────────────────────────── */
+
+function drawBorders(ctx: CanvasRenderingContext2D) {
+  // Outer border
+  ctx.strokeStyle = GOLD;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(30, 30, W - 60, H - 60);
+
+  // Inner border
+  ctx.strokeStyle = GOLD_LIGHT;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(40, 40, W - 80, H - 80);
+
+  // Corner ornaments
+  const inset = 42;
+  const len = 35;
+  ctx.strokeStyle = GOLD;
+  ctx.lineWidth = 2.5;
+
+  // Top-left
+  ctx.beginPath();
+  ctx.moveTo(inset, inset + len);
+  ctx.lineTo(inset, inset);
+  ctx.lineTo(inset + len, inset);
+  ctx.stroke();
+  // Top-right
+  ctx.beginPath();
+  ctx.moveTo(W - inset - len, inset);
+  ctx.lineTo(W - inset, inset);
+  ctx.lineTo(W - inset, inset + len);
+  ctx.stroke();
+  // Bottom-left
+  ctx.beginPath();
+  ctx.moveTo(inset, H - inset - len);
+  ctx.lineTo(inset, H - inset);
+  ctx.lineTo(inset + len, H - inset);
+  ctx.stroke();
+  // Bottom-right
+  ctx.beginPath();
+  ctx.moveTo(W - inset - len, H - inset);
+  ctx.lineTo(W - inset, H - inset);
+  ctx.lineTo(W - inset, H - inset - len);
+  ctx.stroke();
+
+  // Small diamond corners
+  const dInset = 55;
+  const dSize = 5;
+  for (const [cx, cy] of [
+    [dInset, dInset],
+    [W - dInset, dInset],
+    [dInset, H - dInset],
+    [W - dInset, H - dInset],
+  ]) {
+    ctx.fillStyle = GOLD;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - dSize);
+    ctx.lineTo(cx + dSize, cy);
+    ctx.lineTo(cx, cy + dSize);
+    ctx.lineTo(cx - dSize, cy);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawDivider(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number
+) {
+  const cx = x + width / 2;
+  // Line left
+  ctx.strokeStyle = GOLD_LIGHT;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(cx - 12, y);
+  ctx.stroke();
+  // Line right
+  ctx.beginPath();
+  ctx.moveTo(cx + 12, y);
+  ctx.lineTo(x + width, y);
+  ctx.stroke();
+  // Center diamond
+  ctx.fillStyle = GOLD;
+  ctx.beginPath();
+  ctx.moveTo(cx, y - 4);
+  ctx.lineTo(cx + 6, y);
+  ctx.lineTo(cx, y + 4);
+  ctx.lineTo(cx - 6, y);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawFreeIPALogo(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  ctx.save();
+  // Shield outer
+  ctx.beginPath();
+  ctx.moveTo(x + 28, y);
+  ctx.lineTo(x + 56, y);
+  ctx.lineTo(x + 60, y + 10);
+  ctx.lineTo(x + 60, y + 42);
+  ctx.quadraticCurveTo(x + 60, y + 68, x + 28, y + 80);
+  ctx.quadraticCurveTo(x - 4, y + 68, x - 4, y + 42);
+  ctx.lineTo(x - 4, y + 10);
+  ctx.closePath();
+  ctx.fillStyle = FREEIPA_BLUE;
+  ctx.fill();
+
+  // Shield inner white
+  ctx.beginPath();
+  ctx.moveTo(x + 28, y + 5);
+  ctx.lineTo(x + 51, y + 5);
+  ctx.lineTo(x + 54, y + 14);
+  ctx.lineTo(x + 54, y + 42);
+  ctx.quadraticCurveTo(x + 54, y + 62, x + 28, y + 73);
+  ctx.quadraticCurveTo(x + 2, y + 62, x + 2, y + 42);
+  ctx.lineTo(x + 2, y + 14);
+  ctx.closePath();
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+
+  // Key icon — circle head
+  ctx.fillStyle = FREEIPA_BLUE;
+  ctx.beginPath();
+  ctx.arc(x + 28, y + 28, 9, 0, Math.PI * 2);
+  ctx.fill();
+  // Key icon — inner circle (hole)
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(x + 28, y + 27, 4, 0, Math.PI * 2);
+  ctx.fill();
+  // Key shaft
+  ctx.fillStyle = FREEIPA_BLUE;
+  ctx.fillRect(x + 26, y + 37, 4, 22);
+  // Key teeth
+  ctx.fillRect(x + 30, y + 44, 6, 3);
+  ctx.fillRect(x + 30, y + 50, 5, 3);
+  ctx.restore();
+
+  // "FreeIPA" text
+  ctx.fillStyle = FREEIPA_BLUE;
+  ctx.font = "bold 30px Arial, Helvetica, sans-serif";
+  ctx.textAlign = "left";
+  ctx.fillText("FreeIPA", x + 72, y + 48);
+  ctx.font = "12px Arial, Helvetica, sans-serif";
+  ctx.fillStyle = "#888";
+  ctx.fillText("Identity · Policy · Audit", x + 72, y + 66);
+  ctx.textAlign = "center";
+}
+
+function drawRedHatLogo(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  ctx.save();
+
+  // Fedora hat
+  ctx.fillStyle = REDHAT_RED;
+  // Hat brim
+  ctx.beginPath();
+  ctx.ellipse(x + 35, y + 55, 38, 9, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Hat top (dome)
+  ctx.beginPath();
+  ctx.moveTo(x + 5, y + 55);
+  ctx.quadraticCurveTo(x - 2, y + 18, x + 35, y + 10);
+  ctx.quadraticCurveTo(x + 72, y + 18, x + 65, y + 55);
+  ctx.closePath();
+  ctx.fill();
+  // Hat band
+  ctx.fillStyle = "#aa0000";
+  ctx.fillRect(x + 8, y + 43, 54, 5);
+
+  ctx.restore();
+
+  // "Red Hat" text
+  ctx.fillStyle = REDHAT_RED;
+  ctx.font = "bold 30px Arial, Helvetica, sans-serif";
+  ctx.textAlign = "left";
+  ctx.fillText("Red Hat", x + 82, y + 48);
+  ctx.font = "12px Arial, Helvetica, sans-serif";
+  ctx.fillStyle = "#888";
+  ctx.fillText("Sponsored by Red Hat", x + 82, y + 66);
+  ctx.textAlign = "center";
+}
+
+/* ────────────────────────────────────────────── */
+/*  Download helper                               */
+/* ────────────────────────────────────────────── */
+
+export function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ────────────────────────────────────────────── */
+/*  LinkedIn share helper                         */
+/* ────────────────────────────────────────────── */
+
+export async function shareOnLinkedIn(
+  playerName: string,
+  score: number,
+  certBlob?: Blob
+) {
+  // Try Web Share API first (mobile-friendly, can share the image file)
+  if (certBlob && navigator.share && navigator.canShare) {
+    const file = new File(
+      [certBlob],
+      `FreeIPA-Certificate-${playerName.replace(/\s+/g, "_")}.png`,
+      { type: "image/png" }
+    );
+    const shareData = {
+      title: "FreeIPA Policy Panic Certificate",
+      text: `I scored ${score.toLocaleString()} points on the FreeIPA Policy Panic quiz! 🛡️ #FreeIPA #OpenSource #Linux #RedHat`,
+      files: [file],
+    };
+    if (navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch {
+        // User cancelled or share failed — fall through to LinkedIn URL
+      }
+    }
+  }
+
+  // Fallback: open LinkedIn share page
+  const url = encodeURIComponent("https://www.freeipa.org");
+  window.open(
+    `https://www.linkedin.com/sharing/share-offsite/?url=${url}`,
+    "_blank",
+    "width=600,height=500"
+  );
+}
