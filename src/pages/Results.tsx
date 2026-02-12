@@ -2,7 +2,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   tallyScore,
   recordGameLocal,
-  getBestScore,
   submitScore,
   type RoundResult,
 } from "../game/scoring";
@@ -18,7 +17,6 @@ export default function Results() {
 
   const score = useMemo(() => tallyScore(roundResults), [roundResults]);
   const isNewBest = useMemo(() => recordGameLocal(score.total), [score.total]);
-  const bestScore = getBestScore();
 
   const [submitMsg, setSubmitMsg] = useState<string | null>(null);
 
@@ -98,20 +96,13 @@ export default function Results() {
           <div className="value">{accuracy}%</div>
           <div className="label">Accuracy</div>
         </div>
-        <div className="stat-box">
-          <div className="value">{score.maxStreak}</div>
-          <div className="label">Best Streak</div>
-        </div>
-        <div className="stat-box">
-          <div className="value">{bestScore.toLocaleString()}</div>
-          <div className="label">Personal Best</div>
-        </div>
       </div>
 
       <button className="btn btn--outline" onClick={() => navigate("/")}>
         Home
       </button>
 
+      {/* ── Explore & Contribute ── */}
       <div
         className="card"
         style={{
@@ -124,16 +115,25 @@ export default function Results() {
         <h3 style={{ marginBottom: "0.4rem" }}>What is FreeIPA?</h3>
         <p style={{ color: "var(--text-muted)" }}>
           FreeIPA is a free, open-source identity management system for
-          Linux/UNIX. It handles users, groups, hosts, services, Kerberos
-          authentication, certificates, and access policies — all from one
-          place.
+          Linux/UNIX. It handles users, groups, hosts, Kerberos authentication,
+          certificates, and access policies — all from one place.
         </p>
+
+        <h4
+          style={{
+            marginTop: "1rem",
+            marginBottom: "0.5rem",
+            fontSize: "0.85rem",
+            color: "var(--text)",
+          }}
+        >
+          Explore & Contribute
+        </h4>
         <div
           style={{
-            marginTop: "0.75rem",
             display: "flex",
+            flexDirection: "column",
             gap: "0.5rem",
-            flexWrap: "wrap",
           }}
         >
           <a
@@ -142,12 +142,14 @@ export default function Results() {
             rel="noopener noreferrer"
             className="btn btn--outline"
             style={{
-              flex: "1 1 auto",
               fontSize: "0.85rem",
-              padding: "0.6rem 1rem",
+              padding: "0.7rem 1rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
             }}
           >
-            freeipa.org
+            🌐&ensp;freeipa.org — Official Website
           </a>
           <a
             href="https://github.com/freeipa/freeipa"
@@ -155,12 +157,44 @@ export default function Results() {
             rel="noopener noreferrer"
             className="btn btn--outline"
             style={{
-              flex: "1 1 auto",
               fontSize: "0.85rem",
-              padding: "0.6rem 1rem",
+              padding: "0.7rem 1rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
             }}
           >
-            GitHub
+            💻&ensp;GitHub — Source Code
+          </a>
+          <a
+            href="https://pagure.io/freeipa"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn--outline"
+            style={{
+              fontSize: "0.85rem",
+              padding: "0.7rem 1rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+          >
+            🐛&ensp;Pagure — File a Bug / Contribute
+          </a>
+          <a
+            href="https://freeipa.readthedocs.io/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn--outline"
+            style={{
+              fontSize: "0.85rem",
+              padding: "0.7rem 1rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+          >
+            📖&ensp;Docs — Read the Documentation
           </a>
         </div>
       </div>

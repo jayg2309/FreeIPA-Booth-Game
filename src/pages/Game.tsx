@@ -5,7 +5,7 @@ import { generateAIQuestions } from "../game/aiQuestions";
 import type { RoundResult } from "../game/scoring";
 
 const QUESTION_COUNT = 10;
-const TIME_PER_QUESTION = 25; // seconds
+const TIME_PER_QUESTION = 30; // seconds
 
 type AnswerState = null | { chosenIdx: number; correct: boolean };
 
@@ -207,6 +207,23 @@ export default function Game() {
         >
           {currentQ.scenario}
         </p>
+        {currentQ.docUrl && (
+          <a
+            href={currentQ.docUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "inline-block",
+              marginTop: "0.4rem",
+              fontSize: "0.75rem",
+              color: "var(--accent)",
+              opacity: 0.8,
+              textDecoration: "none",
+            }}
+          >
+            📖 Learn more →
+          </a>
+        )}
       </div>
 
       {/* Answer buttons */}

@@ -1,142 +1,70 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-const SYSTEM_PROMPT = `Generate 10 tricky quiz questions about FreeIPA internals for college students at a tech booth.
+const SYSTEM_PROMPT = `You generate quiz questions for a college tech conference booth about Linux identity management.
 
-HARD RULES — violating any of these makes the question REJECTED:
-1. The word "FreeIPA" must NEVER appear in ANY answer option. Every option is already about FreeIPA.
-2. No option may contain generic phrases like "centralized system", "identity platform", "security solution", "management tool", or "open-source solution". Be SPECIFIC.
-3. All 3 options MUST be real, named technologies, protocols, daemons, file paths, commands, or standards. No vague descriptions.
-4. A student who has never heard of FreeIPA should find all 3 options equally plausible. If one option "sounds more correct" than the others, the question is too easy.
-5. Questions must test SPECIFIC knowledge, not common sense.
+The students are beginners. The goal is to teach them cool facts and make them curious enough to Google things afterward. Questions should feel like fun trivia, not an exam.
 
-REFERENCE DOCUMENTATION — use these projects and facts as source material for questions:
+TOPIC KNOWLEDGE (base every question on one of these facts):
 
-FreeIPA (https://freeipa.readthedocs.io/, https://www.freeipa.org):
-- Integrated identity & policy management for Linux/UNIX networks
-- Combines LDAP, Kerberos, DNS, NTP, and Certificate Authority into one solution
-- CLI commands: ipa user-add, ipa group-add, ipa host-add, ipa sudorule-add, ipa hbacrule-add (NOT useradd, NOT ldapadd)
-- Web UI runs on Apache HTTP Server with mod_wsgi (not Nginx, not Tomcat)
-- ipa-server-install sets up the server; ipa-replica-install creates replicas
-- Multi-master replication between replicas (not primary-secondary)
-- Manages host keytabs, service principals, and automount maps
-- Password policy: configurable min length, complexity, history, max failures, lockout duration
-- Account lifecycle: stage → active → preserved users
+1. SSSD is a daemon on Linux clients that caches your login credentials locally. If the network goes down, you can still log in because SSSD saved your info. Its config file is /etc/sssd/sssd.conf. It replaced older tools called nscd and nslcd.
 
-SSSD — System Security Services Daemon (https://sssd.io/):
-- Connects Linux clients to FreeIPA (or AD, LDAP)
-- Caches credentials locally enabling offline login
-- Config file: /etc/sssd/sssd.conf
-- Provides NSS and PAM integration
-- id_provider, auth_provider, access_provider configured per domain
-- Replaces older nscd / nslcd daemons
+2. 389 Directory Server is the LDAP database where all user accounts, groups, and policies live. It is a separate open-source project from OpenLDAP. It listens on port 389 for LDAP and port 636 for encrypted LDAPS. Its admin account is called "Directory Manager."
 
-389 Directory Server (https://www.port389.org/, https://directory.fedoraproject.org/):
-- The LDAP backend for all FreeIPA data (users, groups, hosts, sudo rules, HBAC, DNS)
-- NOT OpenLDAP, NOT Apache Directory Studio
-- Default ports: 389 (LDAP), 636 (LDAPS)
-- Uses cn=Directory Manager as the root admin DN
-- Supports multi-supplier replication (changelog-based)
-- Plugin architecture: memberOf, referential integrity, DNA (distributed numeric assignment)
-- Schema: inetOrgPerson, posixAccount, krbPrincipalAux
+3. Kerberos is the authentication protocol — it uses tickets instead of sending passwords over the network. You type "kinit" to get a ticket called a TGT (Ticket Granting Ticket). "klist" shows your tickets. "kdestroy" deletes them. The Kerberos realm name is always UPPERCASE like EXAMPLE.COM. If your computer clock is off by more than 5 minutes, Kerberos breaks.
 
-MIT Kerberos (https://web.mit.edu/kerberos/):
-- Provides ticket-based authentication (SSO)
-- Key concepts: TGT (Ticket Granting Ticket), KDC (Key Distribution Center), realm, principal
-- Commands: kinit (get ticket), klist (show tickets), kdestroy (remove tickets), kpasswd (change password)
-- Realm name = UPPERCASE domain (e.g., EXAMPLE.COM)
-- Requires time synchronization — max clock skew default is 5 minutes
-- Service principal format: HTTP/host.example.com@EXAMPLE.COM
-- Keytab file: /etc/krb5.keytab stores host/service keys
-- Config: /etc/krb5.conf
+4. Dogtag is the built-in Certificate Authority that issues digital certificates for servers and services. It is different from Let's Encrypt and from using OpenSSL manually. It has a sub-component called KRA (Key Recovery Authority) for storing secret keys.
 
-Dogtag Certificate System (https://www.dogtagpki.org/):
-- The CA (Certificate Authority) inside FreeIPA
-- Issues and manages X.509 certificates
-- NOT Let's Encrypt, NOT OpenSSL CA, NOT EJBCA
-- Sub-systems: CA, KRA (Key Recovery Authority), OCSP, TKS, TPS
-- Stores certs and keys in 389 DS
-- Supports certificate profiles and automatic renewal
+5. Certmonger is a daemon that watches your certificates and renews them automatically before they expire. You manage it with the "getcert" command. It is different from certbot (that is Let's Encrypt's tool).
 
-Certmonger (https://pagure.io/certmonger):
-- Daemon that tracks certificate expiration and auto-renews
-- Command: getcert list, getcert request, getcert start-tracking
-- NOT crontab, NOT systemd timers, NOT certbot
-- Works with Dogtag CA, self-signed, or external CAs
-- Auto-enrolled during ipa-client-install
+6. DNS discovery: the system uses SRV records like _kerberos._tcp and _ldap._tcp so that client machines can automatically find the server without manual configuration. The DNS server is based on BIND.
 
-DNS / BIND (https://bind9.readthedocs.io/):
-- FreeIPA includes integrated BIND DNS server
-- SRV records for service discovery: _kerberos._tcp, _ldap._tcp, _kpasswd._tcp
-- Clients use DNS to find KDC and LDAP servers automatically
-- DNSSEC signing supported
-- ipa dnsrecord-add / ipa dnszone-add commands
-- Zone transfers between replicas
+7. Samba libraries are used to create a trust relationship with Microsoft Active Directory, letting Windows and Linux users share resources. The command is "ipa trust-add."
 
-Samba / Trust with Active Directory (https://www.samba.org/):
-- Cross-realm trust between FreeIPA and Microsoft Active Directory
-- Uses Samba libraries (smbd, winbindd components)
-- NOT ADFS, NOT Azure AD Connect, NOT Okta federation
-- ipa trust-add command establishes trust
-- Allows AD users to access Linux resources and vice versa
-- ID range management for UID/GID mapping
+8. To enroll a Linux machine, you run "ipa-client-install." To set up a server, "ipa-server-install." To add a replica, "ipa-replica-install."
 
-NTP / Chrony (https://chrony-project.org/):
-- Time sync is critical for Kerberos (max skew = 5 minutes)
-- FreeIPA uses chronyd (replaced ntpd)
-- If clocks are out of sync, Kerberos authentication fails silently
+9. HBAC (Host-Based Access Control) rules control which users are allowed to log into which machines.
 
-Automount (https://freeipa.readthedocs.io/en/latest/designs/automount.html):
-- Centrally managed NFS mount maps stored in LDAP
-- ipa automountmap-add, ipa automountkey-add
-- Replaces local /etc/auto.master files
+10. Sudo rules are stored centrally in LDAP and delivered to machines through SSSD. They replace editing /etc/sudoers files on each machine individually.
 
-HBAC — Host-Based Access Control:
-- Controls which users/groups can access which hosts/services
-- ipa hbacrule-add, ipa hbacrule-add-user, ipa hbacrule-add-host
-- Default rule: allow_all (often disabled in production)
-- NOT TCP Wrappers, NOT firewall rules, NOT SELinux booleans
+11. OTP support: time-based one-time passwords (TOTP, like Google Authenticator) and counter-based (HOTP) are supported natively. You add tokens with "ipa otptoken-add."
 
-Sudo Rules:
-- Centrally stored in LDAP (NOT /etc/sudoers, NOT sudoers.d files)
-- ipa sudorule-add, ipa sudorule-add-allow-command
-- Distributed via SSSD to enrolled clients
-- Can scope by user, group, host, host group, and command
+12. Time sync uses chronyd. If clocks are out of sync by more than 5 minutes, Kerberos authentication fails completely.
 
-OTP / Two-Factor Auth:
-- FreeIPA supports TOTP (time-based) and HOTP (counter-based) natively
-- NOT FIDO2/WebAuthn, NOT SMS codes, NOT push notifications
-- Configured per-user; token enrolled via Web UI or CLI
-- ipa otptoken-add command
+13. Replication is multi-master — every server can accept changes, unlike setups where only one primary server handles writes.
 
-SELinux User Mapping:
-- FreeIPA can map IPA users to SELinux contexts on enrolled hosts
-- ipa selinuxusermap-add
-- Ensures users get correct SELinux context at login
+14. User lifecycle has three stages: staged (not yet active), active (can log in), and preserved (disabled but not deleted, for auditing).
 
-Vault / Secret Storage (KRA):
-- FreeIPA's Key Recovery Authority stores secrets (passwords, keys)
-- ipa vault-add, ipa vault-archive, ipa vault-retrieve
-- Symmetric, asymmetric, or standard vault types
+15. The web interface runs on Apache HTTP Server with mod_wsgi.
 
-EXAMPLE GOOD QUESTIONS (generate new ones in this style, DO NOT copy these):
+QUESTION RULES:
+- Write the scenario as a short, relatable campus/lab situation (1-2 sentences).
+- Give exactly 3 answer options. Each option must be a specific technical name: a command, daemon, protocol, file path, port number, or tool.
+- FORBIDDEN in answer options: the words "FreeIPA", "IPA", "identity management", "centralized", "security solution", or any vague phrase. Only specific technical names allowed.
+- Wrong answers must be real things that exist and sound plausible. Example: if the right answer is "SSSD", good wrong answers are "nscd" and "nslcd" (all three are real Linux daemons).
+- The correct answer should be in a different position (1st, 2nd, or 3rd) for each question.
+- The explanation should be 1-2 sentences that teach a cool fact and make the student want to learn more.
 
-{"scenario":"Your lab's Linux machines need to log in even when the network is down. Which daemon caches credentials locally?","options":[{"text":"SSSD","isCorrect":true},{"text":"nscd","isCorrect":false},{"text":"nslcd","isCorrect":false}],"explanation":"SSSD caches Kerberos tickets and LDAP data so enrolled hosts work offline.","concept":"SSSD & Caching"}
+Each question must also include a "docUrl" field — a direct link to relevant documentation or source code for that topic. Use these URLs based on the concept:
+- SSSD → https://sssd.io/docs/introduction.html
+- Kerberos → https://web.mit.edu/kerberos/
+- Directory Server → https://www.port389.org/docs/389ds/documentation.html
+- Certificates → https://www.dogtagpki.org/wiki/PKI_Main_Page
+- Certmonger → https://pagure.io/certmonger
+- DNS → https://freeipa.readthedocs.io/en/latest/designs/dns.html
+- AD Trust → https://freeipa.readthedocs.io/en/latest/designs/adtrust.html
+- Host Enrollment → https://freeipa.readthedocs.io/en/latest/designs/client.html
+- HBAC → https://freeipa.readthedocs.io/en/latest/designs/hbac.html
+- Sudo → https://freeipa.readthedocs.io/en/latest/designs/sudo.html
+- OTP → https://freeipa.readthedocs.io/en/latest/designs/otp.html
+- Time Sync → https://chrony-project.org/documentation.html
+- Replication → https://www.port389.org/docs/389ds/design/replication.html
+- User Lifecycle → https://freeipa.readthedocs.io/en/latest/designs/user-lifecycle.html
+- Web UI → https://github.com/freeipa/freeipa/tree/master/install/ui
 
-{"scenario":"You need to check your active Kerberos ticket. Which command shows current tickets?","options":[{"text":"klist","isCorrect":true},{"text":"ticketctl status","isCorrect":false},{"text":"krb5-list","isCorrect":false}],"explanation":"klist displays cached Kerberos tickets. Use kinit to get a new one.","concept":"Kerberos Tickets"}
+OUTPUT FORMAT — return ONLY a raw JSON array, no markdown, no commentary:
+[{"scenario":"...","options":[{"text":"...","isCorrect":true},{"text":"...","isCorrect":false},{"text":"...","isCorrect":false}],"explanation":"...","concept":"...","docUrl":"..."}]
 
-{"scenario":"The hackathon server needs its certificate renewed automatically. Which tool tracks cert expiry and renews it?","options":[{"text":"openssl cron job","isCorrect":false},{"text":"Certmonger","isCorrect":true},{"text":"Let's Encrypt certbot","isCorrect":false}],"explanation":"Certmonger monitors certs and auto-renews them via Dogtag CA.","concept":"Certmonger"}
-
-{"scenario":"You want to enroll a new Linux laptop into the identity domain. Which command do you run?","options":[{"text":"realm join","isCorrect":false},{"text":"ipa-client-install","isCorrect":true},{"text":"ldap-enroll --host","isCorrect":false}],"explanation":"ipa-client-install configures SSSD, Kerberos, and DNS on the client.","concept":"Host Identity"}
-
-{"scenario":"The club server stores user accounts in LDAP. Which directory server is the backend?","options":[{"text":"OpenLDAP","isCorrect":false},{"text":"Apache Directory","isCorrect":false},{"text":"389 Directory Server","isCorrect":true}],"explanation":"389 DS is the LDAP backend. It stores users, groups, hosts, and policies.","concept":"389 Directory Server"}
-
-Categories to spread across (use each at most twice):
-Single Sign-On, SSSD & Caching, Kerberos Tickets, Kerberos & Time Sync, Groups & RBAC, Least Privilege, Account Lifecycle, Password Policy, Certificates & Dogtag, Certmonger, Host Identity, Open Source, Sudo Rules, HBAC Rules, DNS & Discovery, Two-Factor Auth, Trust & AD, Audit & Logging, 389 Directory Server
-
-Format: scenarios max 25 words, options max 10 words, explanation max 25 words. Vary correct answer position.
-
-Return ONLY a JSON array of 10 objects (no markdown, no commentary):
-[{"scenario":"...","options":[{"text":"...","isCorrect":true/false},...],"explanation":"...","concept":"..."}]`;
+The "concept" field should be one of: SSSD, Kerberos, Directory Server, Certificates, Certmonger, DNS, AD Trust, Host Enrollment, HBAC, Sudo, OTP, Time Sync, Replication, User Lifecycle, Web UI`;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
@@ -146,27 +74,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(503).json({ error: "AI generation not configured" });
   }
 
+  // Support both OpenAI and Groq — detect from env or default to Groq
+  const apiBase = process.env.AI_API_BASE || "https://api.groq.com/openai/v1";
+  const model = process.env.AI_MODEL || "llama-3.3-70b-versatile";
+
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30_000);
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch(`${apiBase}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           {
             role: "user",
             content:
-              "Generate 10 NEW tricky questions (different from the examples). Every option must be a specific named tool, command, protocol, daemon, or standard — never 'FreeIPA' itself, never vague descriptions. All 3 options must be real and equally plausible. Use campus/lab/hackathon scenarios. Vary categories.",
+              "Generate 10 questions. Use a different fact from the topic knowledge for each question. Make sure no answer option contains the word FreeIPA or IPA. Every option must be a real specific technical name. Put the correct answer in a different position each time.",
           },
         ],
-        temperature: 0.9,
+        temperature: 0.85,
         max_tokens: 3500,
       }),
       signal: controller.signal,
@@ -176,7 +108,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!response.ok) {
       const body = await response.text().catch(() => "");
-      throw new Error(`OpenAI ${response.status}: ${body.slice(0, 200)}`);
+      throw new Error(`AI API ${response.status}: ${body.slice(0, 200)}`);
     }
 
     const data = await response.json();
@@ -197,15 +129,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const correctCount = opts.filter((o: any) => o.isCorrect).length;
       if (correctCount !== 1) throw new Error(`Q${i}: need exactly 1 correct`);
 
+      // Fallback docUrl by concept if the AI didn't provide one
+      const DOC_URLS: Record<string, string> = {
+        "SSSD": "https://sssd.io/docs/introduction.html",
+        "Kerberos": "https://web.mit.edu/kerberos/",
+        "Directory Server": "https://www.port389.org/docs/389ds/documentation.html",
+        "Certificates": "https://www.dogtagpki.org/wiki/PKI_Main_Page",
+        "Certmonger": "https://pagure.io/certmonger",
+        "DNS": "https://freeipa.readthedocs.io/en/latest/designs/dns.html",
+        "AD Trust": "https://freeipa.readthedocs.io/en/latest/designs/adtrust.html",
+        "Host Enrollment": "https://freeipa.readthedocs.io/en/latest/designs/client.html",
+        "HBAC": "https://freeipa.readthedocs.io/en/latest/designs/hbac.html",
+        "Sudo": "https://freeipa.readthedocs.io/en/latest/designs/sudo.html",
+        "OTP": "https://freeipa.readthedocs.io/en/latest/designs/otp.html",
+        "Time Sync": "https://chrony-project.org/documentation.html",
+        "Replication": "https://www.port389.org/docs/389ds/design/replication.html",
+        "User Lifecycle": "https://freeipa.readthedocs.io/en/latest/designs/user-lifecycle.html",
+        "Web UI": "https://github.com/freeipa/freeipa/tree/master/install/ui",
+      };
+
+      const concept = String(q.concept ?? "FreeIPA");
+      const docUrl = String(q.docUrl ?? "") || DOC_URLS[concept] || "https://www.freeipa.org";
+
       return {
         id: 2000 + i,
         scenario: String(q.scenario ?? ""),
         options: opts.map((o: any) => ({
-          text: String(o.text ?? ""),
+          text: String(o.text ?? "")
+            .replace(/\bFreeIPA\b/gi, "the identity system")
+            .replace(/\bIPA\b/g, "the identity system"),
           isCorrect: Boolean(o.isCorrect),
         })),
         explanation: String(q.explanation ?? ""),
-        concept: String(q.concept ?? "FreeIPA"),
+        concept,
+        docUrl,
       };
     });
 

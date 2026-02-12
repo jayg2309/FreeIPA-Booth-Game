@@ -4,6 +4,8 @@ export interface Question {
   options: { text: string; isCorrect: boolean }[];
   explanation: string;
   concept: string;
+  /** Optional link to related documentation or source code */
+  docUrl?: string;
 }
 
 const allQuestions: Question[] = [

@@ -7,7 +7,7 @@ import type { Question } from "./questionBank";
  */
 export async function generateAIQuestions(): Promise<Question[]> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 25_000);
+  const timeout = setTimeout(() => controller.abort(), 35_000);
 
   try {
     const res = await fetch("/api/generate-questions", {
