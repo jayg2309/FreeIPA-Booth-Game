@@ -86,7 +86,7 @@ export default function Results() {
       certBlobRef.current = blob;
       downloadBlob(
         blob,
-        `FreeIPA-Certificate-${playerName.replace(/\s+/g, "_")}.png`
+        `Quiz-Badge-${playerName.replace(/\s+/g, "_")}.png`
       );
     } finally {
       setCertLoading(false);
