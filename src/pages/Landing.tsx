@@ -35,14 +35,13 @@ export default function Landing() {
       if (res.ok) {
         const data = await res.json();
         if (data.alreadyPlayed) {
-          setEmailError("This email has already been used to play. One attempt per person!");
+          setEmailError("This email has already been used. One attempt per person!");
           setChecking(false);
           return;
         }
       }
-      // If API is unreachable (local dev / offline), allow play anyway
     } catch {
-      // Network error — let them play, server will reject on submit if duplicate
+      // Network error — allow play, server will reject on submit if duplicate
     }
 
     setChecking(false);
@@ -57,25 +56,16 @@ export default function Landing() {
 
   return (
     <div className="page fade-in">
-      {/* Shield icon */}
-      <div style={{ fontSize: "4rem", lineHeight: 1 }}>🛡️</div>
+      <div style={{ fontSize: "3.5rem", lineHeight: 1 }}>🛡️</div>
 
       <h1>Policy Panic</h1>
-      <p style={{ maxWidth: 320 }}>
+      <p style={{ maxWidth: 320, fontSize: "0.9rem", lineHeight: 1.6 }}>
         Identity crises are happening across the network! Tap the right
         security control before time runs out.
       </p>
 
-      {/* Name + Email inputs */}
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 340,
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.5rem",
-        }}
-      >
+      {/* ── Inputs ── */}
+      <div style={{ width: "100%", maxWidth: 360, display: "flex", flexDirection: "column", gap: "0.6rem" }}>
         <input
           type="text"
           placeholder="Your name"
@@ -90,24 +80,14 @@ export default function Landing() {
           type="email"
           placeholder="Your email"
           value={email}
-          onChange={(e) => {
-            setEmail(e.target.value);
-            setEmailError("");
-          }}
+          onChange={(e) => { setEmail(e.target.value); setEmailError(""); }}
           onKeyDown={handleKeyDown}
           maxLength={64}
           className="name-input"
-          style={emailError ? { borderColor: "var(--danger)" } : undefined}
+          style={emailError ? { borderColor: "var(--danger)", boxShadow: "0 0 0 3px rgba(239,68,68,0.15)" } : undefined}
         />
         {emailError && (
-          <p
-            style={{
-              color: "var(--danger)",
-              fontSize: "0.8rem",
-              margin: 0,
-              textAlign: "left",
-            }}
-          >
+          <p style={{ color: "var(--danger)", fontSize: "0.78rem", margin: 0, textAlign: "left" }}>
             {emailError}
           </p>
         )}
@@ -117,64 +97,31 @@ export default function Landing() {
         className="btn btn--large"
         onClick={handlePlay}
         disabled={!canPlay}
-        style={{ marginTop: "0.25rem", opacity: canPlay ? 1 : 0.4 }}
       >
         {checking ? "Checking..." : "▶\u2002Play"}
       </button>
 
-      {/* Shared Leaderboard — shows rank + name + score (no emails) */}
+      {/* ── Leaderboard ── */}
       {leaderboard.length > 0 && (
         <div className="card" style={{ textAlign: "left" }}>
-          <h3 style={{ marginBottom: "0.6rem", textAlign: "center" }}>
+          <h3 style={{ marginBottom: "0.5rem", textAlign: "center" }}>
             Leaderboard
           </h3>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.35rem",
-            }}
-          >
+          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
             {leaderboard.slice(0, 10).map((entry, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  fontSize: "0.9rem",
-                  padding: "0.35rem 0",
-                  borderBottom:
-                    i < Math.min(leaderboard.length, 10) - 1
-                      ? "1px solid #334155"
-                      : "none",
-                }}
-              >
-                <span
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                  }}
-                >
-                  <span
-                    style={{
-                      fontWeight: 700,
-                      color: i < 3 ? "var(--warning)" : "var(--text-muted)",
-                      minWidth: "1.5rem",
-                    }}
-                  >
-                    {i === 0
-                      ? "🥇"
-                      : i === 1
-                      ? "🥈"
-                      : i === 2
-                      ? "🥉"
-                      : `${i + 1}.`}
+              <div key={i} className="lb-row">
+                <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <span style={{
+                    fontWeight: 700,
+                    color: i < 3 ? "var(--warning)" : "var(--text-muted)",
+                    minWidth: "1.5rem",
+                    fontSize: i < 3 ? "1.1rem" : "0.85rem",
+                  }}>
+                    {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
                   </span>
                   <span style={{ fontWeight: 500 }}>{entry.name}</span>
                 </span>
-                <span style={{ fontWeight: 700, color: "var(--accent)" }}>
+                <span style={{ fontWeight: 700, color: "var(--accent)", fontSize: "0.9rem" }}>
                   {entry.score.toLocaleString()}
                 </span>
               </div>
@@ -183,54 +130,32 @@ export default function Landing() {
         </div>
       )}
 
+      {/* ── High Score ── */}
       {leaderboard.length > 0 && (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "1rem 1.5rem",
-            background: "rgba(56, 189, 248, 0.08)",
-            border: "2px solid var(--accent)",
-            borderRadius: "1rem",
-            width: "100%",
-            maxWidth: 340,
-          }}
-        >
-          <div
-            style={{
-              fontSize: "0.85rem",
-              color: "var(--text-muted)",
-              textTransform: "uppercase",
-              letterSpacing: "0.1em",
-              marginBottom: "0.25rem",
-              fontWeight: 600,
-            }}
-          >
+        <div className="high-score-card">
+          <div style={{
+            fontSize: "0.75rem",
+            color: "var(--text-muted)",
+            textTransform: "uppercase",
+            letterSpacing: "0.12em",
+            marginBottom: "0.2rem",
+            fontWeight: 600,
+          }}>
             High Score
           </div>
-          <div
-            style={{
-              fontSize: "2.5rem",
-              fontWeight: 800,
-              color: "var(--accent)",
-              lineHeight: 1.1,
-            }}
-          >
+          <div className="score-hero">
             {leaderboard[0].score.toLocaleString()}
           </div>
         </div>
       )}
 
-      <div style={{ marginTop: "auto", paddingTop: "1rem" }}>
-        <p style={{ fontSize: "0.8rem" }}>
+      <div style={{ marginTop: "auto", paddingTop: "0.75rem" }}>
+        <p style={{ fontSize: "0.78rem" }}>
           Learn more about{" "}
-          <a
-            href="https://www.freeipa.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <a href="https://www.freeipa.org" target="_blank" rel="noopener noreferrer">
             FreeIPA
-          </a>{" "}
-          — open-source identity management for Linux
+          </a>
+          {" "}— open-source identity management for Linux
         </p>
       </div>
     </div>

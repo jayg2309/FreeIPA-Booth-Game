@@ -124,17 +124,17 @@ export default function Game() {
   if (loading || !questions || !currentQ) {
     return (
       <div className="page fade-in">
-        <div style={{ fontSize: "2.5rem" }}>🛡️</div>
+        <div style={{ fontSize: "3rem" }} className="pop-in">🛡️</div>
         <h2>Generating questions...</h2>
-        <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
+        <p style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>
           Crafting unique scenarios just for you
         </p>
-        <div className="timer-bar-track" style={{ maxWidth: 200, marginTop: "0.5rem" }}>
+        <div className="timer-bar-track" style={{ maxWidth: 220, marginTop: "0.75rem" }}>
           <div
             className="timer-bar-fill"
             style={{
               width: "100%",
-              animation: "pulse 1.2s ease-in-out infinite",
+              animation: "pulse 1.4s ease-in-out infinite",
             }}
           />
         </div>
@@ -212,22 +212,10 @@ export default function Game() {
             href={currentQ.docUrl}
             target="_blank"
             rel="noopener noreferrer"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.4rem",
-              marginTop: "0.75rem",
-              padding: "0.45rem 0.9rem",
-              fontSize: "0.85rem",
-              fontWeight: 600,
-              color: "var(--accent)",
-              background: "rgba(56, 189, 248, 0.1)",
-              border: "1px solid rgba(56, 189, 248, 0.3)",
-              borderRadius: "0.5rem",
-              textDecoration: "none",
-            }}
+            className="explore-link"
+            style={{ marginTop: "0.65rem", display: "inline-flex" }}
           >
-            📖 Learn more about this topic →
+            <span className="icon">📖</span> Learn more about this topic
           </a>
         )}
       </div>
