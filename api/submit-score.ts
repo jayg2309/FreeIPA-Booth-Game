@@ -12,8 +12,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (typeof name !== "string" || name.trim().length < 1) {
     return res.status(400).json({ error: "Invalid name" });
   }
-  if (typeof email !== "string" || !/^[^\s@]+@gmail\.com$/i.test(email.trim())) {
-    return res.status(400).json({ error: "Only Gmail addresses are allowed" });
+  if (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    return res.status(400).json({ error: "Invalid email" });
   }
   if (!Number.isInteger(score) || score < 0 || score > MAX_SCORE) {
     return res.status(400).json({ error: "Invalid score" });

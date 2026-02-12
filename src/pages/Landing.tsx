@@ -17,7 +17,7 @@ export default function Landing() {
     fetchLeaderboard().then(setLeaderboard);
   }, []);
 
-  const validEmail = /^[^\s@]+@gmail\.com$/i.test(email.trim());
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const canPlay = name.trim().length > 0 && validEmail && !checking;
 
   const handlePlay = async () => {
@@ -88,7 +88,7 @@ export default function Landing() {
         />
         <input
           type="email"
-          placeholder="Your Gmail (example@gmail.com)"
+          placeholder="Your email"
           value={email}
           onChange={(e) => {
             setEmail(e.target.value);

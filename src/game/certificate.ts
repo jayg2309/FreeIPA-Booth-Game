@@ -43,36 +43,36 @@ export async function generateCertificate(
 
   /* ── Congratulations ── */
   ctx.fillStyle = GOLD;
-  ctx.font = "small-caps 16px Georgia, 'Times New Roman', serif";
+  ctx.font = "bold small-caps 38px Georgia, 'Times New Roman', serif";
   ctx.textAlign = "center";
-  ctx.letterSpacing = "5px";
-  ctx.fillText("CONGRATULATIONS", W / 2, 110);
+  ctx.letterSpacing = "8px";
+  ctx.fillText("CONGRATULATIONS", W / 2, 120);
   ctx.letterSpacing = "0px";
 
   /* ── Divider ── */
-  drawDivider(ctx, W / 2 - 140, 125, 280);
+  drawDivider(ctx, W / 2 - 180, 140, 360);
 
   /* ── Player name ── */
   ctx.fillStyle = DARK;
-  ctx.font = "bold 44px Georgia, 'Times New Roman', serif";
-  ctx.fillText(playerName, W / 2, 200);
+  ctx.font = "bold 48px Georgia, 'Times New Roman', serif";
+  ctx.fillText(playerName, W / 2, 210);
 
   /* ── Message ── */
   ctx.fillStyle = "#555";
-  ctx.font = "20px Georgia, 'Times New Roman', serif";
+  ctx.font = "22px Georgia, 'Times New Roman', serif";
   ctx.fillText("on successfully completing the quiz", W / 2, 270);
 
   /* ── Divider ── */
-  drawDivider(ctx, W / 2 - 120, 300, 240);
+  drawDivider(ctx, W / 2 - 140, 300, 280);
 
   /* ── Score ── */
   ctx.fillStyle = "#888";
-  ctx.font = "18px Georgia, 'Times New Roman', serif";
+  ctx.font = "20px Georgia, 'Times New Roman', serif";
   ctx.fillText("Your Score", W / 2, 350);
 
   ctx.fillStyle = ACCENT;
-  ctx.font = "bold 64px Georgia, 'Times New Roman', serif";
-  ctx.fillText(score.toLocaleString(), W / 2, 430);
+  ctx.font = "bold 72px Georgia, 'Times New Roman', serif";
+  ctx.fillText(score.toLocaleString(), W / 2, 440);
 
   /* ── Date ── */
   const date = new Date().toLocaleDateString("en-US", {
@@ -81,7 +81,7 @@ export async function generateCertificate(
     day: "numeric",
   });
   ctx.fillStyle = "#aaa";
-  ctx.font = "14px Georgia, 'Times New Roman', serif";
+  ctx.font = "15px Georgia, 'Times New Roman', serif";
   ctx.fillText(date, W / 2, 510);
 
   /* ── Bottom accent line ── */

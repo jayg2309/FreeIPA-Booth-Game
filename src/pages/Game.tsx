@@ -114,7 +114,7 @@ export default function Game() {
           setTimeLeft(TIME_PER_QUESTION);
           setAnswerState(null);
         }
-      }, 1800);
+      }, 5000);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [answerState, currentQ, qIdx, results, timeLeft, navigate]
@@ -213,15 +213,21 @@ export default function Game() {
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              display: "inline-block",
-              marginTop: "0.4rem",
-              fontSize: "0.75rem",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              marginTop: "0.75rem",
+              padding: "0.45rem 0.9rem",
+              fontSize: "0.85rem",
+              fontWeight: 600,
               color: "var(--accent)",
-              opacity: 0.8,
+              background: "rgba(56, 189, 248, 0.1)",
+              border: "1px solid rgba(56, 189, 248, 0.3)",
+              borderRadius: "0.5rem",
               textDecoration: "none",
             }}
           >
-            📖 Learn more →
+            📖 Learn more about this topic →
           </a>
         )}
       </div>
